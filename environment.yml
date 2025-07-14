@@ -11,4 +11,3 @@ dependencies:
   - duckdb
   - pydeck
   - ipykernel
-  - matplotlib

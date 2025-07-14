@@ -11,7 +11,7 @@ import pydeck as pdk
 from datetime import datetime
 import calendar
 
-from matplotlib import cm
+#from matplotlib import cm
 import numpy as np
 
 
@@ -25,20 +25,70 @@ import numpy as np
 #         green_blue = int(255 * (1 - scale))
 #         return [255, green_blue, green_blue]
 
+viridis_colors = [
+    [68, 1, 84],
+    [71, 39, 119],
+    [62, 73, 137],
+    [48, 103, 141],
+    [37, 130, 142],
+    [30, 157, 136],
+    [53, 183, 120],
+    [109, 206, 88],
+    [181, 221, 43],
+    [253, 231, 36]
+]
+
+magma_colors = [
+    [0, 0, 3],
+    [23, 15, 60],
+    [67, 15, 117],
+    [113, 31, 129],
+    [158, 46, 126],
+    [205, 63, 112],
+    [240, 96, 93],
+    [253, 149, 103],
+    [254, 201, 141],
+    [251, 252, 191]
+]
+
+reds_colors = [
+    [255, 245, 240],
+    [254, 226, 213],
+    [252, 195, 172],
+    [252, 159, 129],
+    [251, 124, 92],
+    [245, 84, 60],
+    [227, 47, 39],
+    [193, 21, 27],
+    [157, 13, 20],
+    [103, 0, 12]
+]
+
+def interpolate_from_list(color_list, t):
+    n = len(color_list) - 1
+    idx = int(t * n)
+    frac = (t * n) - idx
+    if idx >= n:
+        return color_list[-1]
+    c0 = color_list[idx]
+    c1 = color_list[idx + 1]
+    return [
+        int(c0[i] + (c1[i] - c0[i]) * frac)
+        for i in range(3)
+    ]
+
 def wind_to_color(wind):
     if pd.isna(wind) or wind <= 0:
-        return [255, 255, 255]  # white
+        return [255, 255, 255]
 
     scale = min(wind / 150, 1.0)
 
     if color_scheme == "Viridis":
-        rgba = cm.viridis(scale)
+        return interpolate_from_list(viridis_colors, scale)
     elif color_scheme == "Magma":
-        rgba = cm.magma(scale)
-    else:  # Reds default
-        rgba = cm.Reds(scale)
-
-    return [int(rgba[0] * 255), int(rgba[1] * 255), int(rgba[2] * 255)]
+        return interpolate_from_list(magma_colors, scale)
+    else:
+        return interpolate_from_list(reds_colors, scale)
 
 
 # Load preprocessed Parquet file

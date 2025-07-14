@@ -4,4 +4,3 @@ pyarrow
 duckdb
 pydeck
 ipykernel
-matplotlib
