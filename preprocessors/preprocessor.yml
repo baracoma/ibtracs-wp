@@ -1,0 +1,19 @@
+name: ibtracs-wp-preprocess
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pandas
+  - geopandas
+  - cartopy
+  - duckdb
+  - numpy
+  - scipy
+  - jupyterlab
+  - tqdm
+  - matplotlib
+  - ipywidgets
+  - proj
+  - gdal
+  
