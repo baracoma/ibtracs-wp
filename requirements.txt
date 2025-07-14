@@ -1,0 +1,7 @@
+streamlit
+pandas
+pyarrow
+duckdb
+pydeck
+ipykernel
+matplotlib
