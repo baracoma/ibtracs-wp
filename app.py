@@ -1,6 +1,10 @@
 import streamlit as st
 
-st.set_page_config(layout="wide")
+#st.set_page_config(layout="wide")
+
+st.set_page_config(page_title="IBTrACS Philippines Dashboard", layout="wide")
+st.title("IBTrACS Philippines Dashboard")
+
 
 import pandas as pd
 import pydeck as pdk
@@ -24,13 +28,18 @@ df_tracks["WMO_PRES"] = pd.to_numeric(df_tracks["WMO_PRES"], errors="coerce")
 # Sidebar Controls
 st.sidebar.header("Start Date")
 
-years = sorted(df_tracks['ISO_TIME'].dt.year.unique())
+#years = sorted(df_tracks['ISO_TIME'].dt.year.unique())
+years = sorted(df_tracks['ISO_TIME'].dt.year.unique(), reverse=True)
 months = list(range(1, 13))
 
 default_start_year = 2024
 default_end_year = 2024
 
-start_year = st.sidebar.selectbox("Start Year", years, index=years.index(default_start_year))
+#years_sorted = sorted(years, reverse=True)
+start_year = st.sidebar.selectbox("Year", years, index=years.index(default_start_year))
+
+
+#start_year = st.sidebar.selectbox("Start Year", years, index=years.index(default_start_year))
 start_month = st.sidebar.selectbox("Start Month", months, index=0)  # January
 max_start_day = calendar.monthrange(start_year, start_month)[1]
 start_day = st.sidebar.selectbox("Start Day", list(range(1, max_start_day + 1)), index=0)  # Day 1
@@ -68,9 +77,42 @@ sids_intersects_ph = df_tracks.loc[
     'SID'
 ].unique()
 
-st.write(f"Total Tropical Cyclones (TCs) selected: {len(sids_in_range)}")
-st.write(f"TCs entering Philippine Area of Responsibility (PAR): {len(sids_intersects_par)}")
-st.write(f"TCs making landfall in the Philippines: {len(sids_intersects_ph)}")
+# st.write(f"Total Tropical Cyclones (TCs) selected: {len(sids_in_range)}")
+# st.write(f"TCs entering Philippine Area of Responsibility (PAR): {len(sids_intersects_par)}")
+# st.write(f"TCs making landfall in the Philippines: {len(sids_intersects_ph)}")
+
+#st.markdown(f"**Dates selected:** {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
+
+# stats_df = pd.DataFrame({#
+#    "Metric": [
+#        "Total TCs",
+#        "TCs entering PAR",
+#        "TCs making Ph landfall"
+#    ],
+#    "Count": [
+#        len(sids_in_range),
+#        len(sids_intersects_par),
+#        len(sids_intersects_ph)
+#    ]
+#})
+#stats_df = stats_df.reset_index(drop=True)
+#st.dataframe(stats_df, width=300, height=150)
+#st.table(stats_df.style.hide(axis="index"))
+#st.table(stats_df.set_index("Metric"))
+
+#st.markdown(f"**Dates selected:** {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
+st.markdown(f"**Dates selected:** {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}  \n"
+            "*Note: Tracks shown include the **full paths** of tropical cyclones that intersect the selected dates. Not all points fall within the exact date range.*")
+
+st.sidebar.header("Counts for the period")
+
+st.sidebar.markdown("""
+<table style='width: 220px'>
+  <tr><td>Total TCs</td><td style='text-align: right;'>""" + str(len(sids_in_range)) + """</td></tr>
+  <tr><td>TCs entering PAR</td><td style='text-align: right;'>""" + str(len(sids_intersects_par)) + """</td></tr>
+  <tr><td>TCs making Ph landfall</td><td style='text-align: right;'>""" + str(len(sids_intersects_ph)) + """</td></tr>
+</table>
+""", unsafe_allow_html=True)
 
 par_polygon = {
     'coordinates': [[
@@ -114,14 +156,19 @@ if not filtered.empty:
                 "SID": sid,
                 "source": [group.loc[i, "LON"], group.loc[i, "LAT"]],
                 "target": [group.loc[i + 1, "LON"], group.loc[i + 1, "LAT"]],
-                "WMO_WIND": group.loc[i, "WMO_WIND"] if not pd.isna(group.loc[i, "WMO_WIND"]) else 0,
-                "WMO_PRES": group.loc[i, "WMO_PRES"] if not pd.isna(group.loc[i, "WMO_PRES"]) else 0,
+                # "WMO_WIND": group.loc[i, "WMO_WIND"] if not pd.isna(group.loc[i, "WMO_WIND"]) else 0,
+                # "WMO_PRES": group.loc[i, "WMO_PRES"] if not pd.isna(group.loc[i, "WMO_PRES"]) else 0,
+                "WMO_WIND": group.loc[i, "WMO_WIND"],
+                "WMO_PRES": group.loc[i, "WMO_PRES"],
                 "ISO_TIME": str(group.loc[i, "ISO_TIME"])
             })
 
 
     segment_df = pd.DataFrame(segment_rows)
-    segment_df["color"] = segment_df["WMO_WIND"].apply(wind_to_color)
+    segment_df["WMO_WIND_DISPLAY"] = segment_df["WMO_WIND"]  # For tooltip display
+    segment_df["WMO_WIND_PLOT"] = segment_df["WMO_WIND"].fillna(0)  # For plotting color
+    segment_df["color"] = segment_df["WMO_WIND_PLOT"].apply(wind_to_color)
+
 
     # line_layer = pdk.Layer(
     #     "LineLayer",
@@ -148,7 +195,7 @@ if not filtered.empty:
     layers.append(line_layer)
 
 #layers.append(par_layer)
-canvas_height = st.session_state.get("map_height", 600)
+canvas_height = st.session_state.get("map_height", 550)
 
 st.pydeck_chart(pdk.Deck(
     layers=layers,
@@ -161,10 +208,23 @@ st.pydeck_chart(pdk.Deck(
     tooltip={
         "html": "<b>SID:</b> {SID}<br/>"
                 "<b>Time:</b> {ISO_TIME}<br/>"
-                "<b>Wind:</b> {WMO_WIND}<br/>"
-                "<b>Pressure:</b> {WMO_PRES}",
+                "<b>Wind:</b> {WMO_WIND_DISPLAY} kt<br/>"
+                "<b>Pressure:</b> {WMO_PRES} mb",
         "style": {"color": "white"}
     }
 ), use_container_width=True,
    height=canvas_height,)
+
+st.markdown("""
+**About the data:** Data is sourced from [NOAA IBTrACS](https://www.ncdc.noaa.gov/ibtracs/) and filtered for the Western Pacific (WP) basin. WMO_WIND values shown are based on agency-reported best track data. For WP, WMO_WIND primarily reflects **10-minute sustained wind speeds as reported by the Japan Meteorological Agency (JMA)**. Other agencies may use different wind averaging periods; users are advised to consult IBTrACS documentation for detailed metadata.
+
+**Disclaimer:** This dashboard is for educational and research purposes only. The data is provided as is, without warranties of any kind, express or implied, including but not limited to accuracy, completeness, reliability, or fitness for a particular purpose.
+
+There may be differences between IBTrACS tracks and official tracks from the Philippine Atmospheric, Geophysical and Astronomical Services Administration (PAGASA), particularly regarding tropical cyclone names, track paths, intensities, and classification. **The developers do not assume responsibility for reconciling differences between IBTrACS and PAGASA records.**
+
+The developers and data providers do not accept liability for any loss, damage, or consequences resulting from the use of this dashboard. This tool is not intended for operational forecasting, life-and-death decision-making, insurance, legal, or other critical applications.
+
+For complete and official tropical cyclone data and climatology in the Philippines, please consult [PAGASA Climatology and Agrometeorology Division (CAD)](https://www.pagasa.dost.gov.ph/climate/tropical-cyclone-information).
+""")
+
 
