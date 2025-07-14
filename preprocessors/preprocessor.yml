@@ -16,4 +16,5 @@ dependencies:
   - ipywidgets
   - proj
   - gdal
-  
+  - pyarrow
+  - feather-format
