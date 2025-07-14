@@ -11,13 +11,35 @@ import pydeck as pdk
 from datetime import datetime
 import calendar
 
+from matplotlib import cm
+import numpy as np
+
+
+
+
+# def wind_to_color(wind):
+#     if pd.isna(wind) or wind <= 0:
+#         return [255, 255, 255]  # white
+#     else:
+#         scale = min(wind / 150, 1.0)
+#         green_blue = int(255 * (1 - scale))
+#         return [255, green_blue, green_blue]
+
 def wind_to_color(wind):
     if pd.isna(wind) or wind <= 0:
         return [255, 255, 255]  # white
-    else:
-        scale = min(wind / 150, 1.0)
-        green_blue = int(255 * (1 - scale))
-        return [255, green_blue, green_blue]
+
+    scale = min(wind / 150, 1.0)
+
+    if color_scheme == "Viridis":
+        rgba = cm.viridis(scale)
+    elif color_scheme == "Magma":
+        rgba = cm.magma(scale)
+    else:  # Reds default
+        rgba = cm.Reds(scale)
+
+    return [int(rgba[0] * 255), int(rgba[1] * 255), int(rgba[2] * 255)]
+
 
 # Load preprocessed Parquet file
 DATA_PATH = "data/ibtracs_wp_tracks.parquet"
@@ -101,8 +123,7 @@ sids_intersects_ph = df_tracks.loc[
 #st.table(stats_df.set_index("Metric"))
 
 #st.markdown(f"**Dates selected:** {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
-st.markdown(f"**Dates selected:** {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}  \n"
-            "*Note: Tracks shown include the **full paths** of tropical cyclones that intersect the selected dates. Not all points fall within the exact date range.*")
+st.markdown(f"**Dates selected:** {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
 
 st.sidebar.header("Counts for the period")
 
@@ -113,6 +134,8 @@ st.sidebar.markdown("""
   <tr><td>TCs making Ph landfall</td><td style='text-align: right;'>""" + str(len(sids_intersects_ph)) + """</td></tr>
 </table>
 """, unsafe_allow_html=True)
+
+color_scheme = st.sidebar.selectbox("Color scheme", ["Reds", "Viridis", "Magma"])
 
 par_polygon = {
     'coordinates': [[
@@ -214,6 +237,8 @@ st.pydeck_chart(pdk.Deck(
     }
 ), use_container_width=True,
    height=canvas_height,)
+
+st.markdown("*Note: Tracks shown include the **full paths** of tropical cyclones that intersect the selected dates. Not all points fall within the exact date range.*")
 
 st.markdown("""
 **About the data:** Data is sourced from [NOAA IBTrACS](https://www.ncdc.noaa.gov/ibtracs/) and filtered for the Western Pacific (WP) basin. WMO_WIND values shown are based on agency-reported best track data. For WP, WMO_WIND primarily reflects **10-minute sustained wind speeds as reported by the Japan Meteorological Agency (JMA)**. Other agencies may use different wind averaging periods; users are advised to consult IBTrACS documentation for detailed metadata.
