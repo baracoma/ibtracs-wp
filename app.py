@@ -104,38 +104,70 @@ years = sorted(df_tracks['ISO_TIME'].dt.year.unique(), reverse=True)
 months = list(range(1, 13))
 
 # Set default years but check first if they exist
-default_start_year = 2024 if 2024 in years else max(years)
+#default_start_year = 2024 if 2024 in years else max(years)
 
-start_year = st.sidebar.selectbox(
-    "Start Year", years, index=years.index(default_start_year), key="start_year_select"
-)
+#start_year = st.sidebar.selectbox(
+    #"Start Year", years, index=years.index(default_start_year), key="start_year_select"
+#)
 
 # End year options depend on start year forward
-years_end = [y for y in years if y >= start_year]
+#years_end = [y for y in years if y >= start_year]
 
-default_end_year = 2024 if 2024 in years_end else years_end[0]
-
-
-
+#default_end_year = 2024 if 2024 in years_end else years_end[0]
 
 #start_year = st.sidebar.selectbox("Start Year", years, index=years.index(default_start_year))
-start_month = st.sidebar.selectbox("Start Month", months, index=0)  # January
-max_start_day = calendar.monthrange(start_year, start_month)[1]
-start_day = st.sidebar.selectbox("Start Day", list(range(1, max_start_day + 1)), index=0)  # Day 1
+#start_month = st.sidebar.selectbox("Start Month", months, index=0)  # January
+#max_start_day = calendar.monthrange(start_year, start_month)[1]
+#start_day = st.sidebar.selectbox("Start Day", list(range(1, max_start_day + 1)), index=0)  # Day 1
 
-years_end = [y for y in years if y >= start_year]
+#years_end = [y for y in years if y >= start_year]
 
-st.sidebar.header("End Date")
-end_year = st.sidebar.selectbox(
-    "End Year", years_end, index=years_end.index(default_end_year), key="end_year_select"
+# Initialize session state defaults
+# Set up years and months
+years = sorted(df_tracks['ISO_TIME'].dt.year.unique(), reverse=True)
+months = list(range(1, 13))
+
+# Initialize session state defaults
+if "start_year" not in st.session_state:
+    st.session_state.start_year = 2024 if 2024 in years else max(years)
+if "end_year" not in st.session_state:
+    st.session_state.end_year = st.session_state.start_year
+
+# Select Start Year
+st.session_state.start_year = st.sidebar.selectbox(
+    "Start Year", years, index=years.index(st.session_state.start_year), key="start_year_select"
 )
 
-end_month = st.sidebar.selectbox("End Month", months, index=11)  # December
-max_end_day = calendar.monthrange(end_year, end_month)[1]
-end_day = st.sidebar.selectbox("End Day", list(range(1, max_end_day + 1)), index=max_end_day - 1)  # Last day of month
+years_end = [y for y in years if y >= st.session_state.start_year]
 
+# Adjust end_year if invalid
+if st.session_state.end_year not in years_end:
+    st.session_state.end_year = st.session_state.start_year
+
+# Select End Year
+
+# Select Start Month/Day (not session state)
+start_month = st.sidebar.selectbox("Start Month", months, index=0)
+max_start_day = calendar.monthrange(st.session_state.start_year, start_month)[1]
+start_day = st.sidebar.selectbox("Start Day", list(range(1, max_start_day + 1)), index=0)
+
+st.sidebar.header("End Date")
+st.session_state.end_year = st.sidebar.selectbox(
+    "End Year", years_end, index=years_end.index(st.session_state.end_year), key="end_year_select"
+)
+
+
+# Select End Month/Day
+end_month = st.sidebar.selectbox("End Month", months, index=11)
+max_end_day = calendar.monthrange(st.session_state.end_year, end_month)[1]
+end_day = st.sidebar.selectbox("End Day", list(range(1, max_end_day + 1)), index=max_end_day - 1)
+
+# Assign final values
+start_year = st.session_state.start_year
+end_year = st.session_state.end_year
 start_date = datetime(start_year, start_month, start_day)
 end_date = datetime(end_year, end_month, end_day)
+
 
 if end_date < start_date:
     st.error("End date cannot be earlier than start date. Please adjust your selection.")
