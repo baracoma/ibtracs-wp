@@ -100,15 +100,22 @@ df_tracks["WMO_PRES"] = pd.to_numeric(df_tracks["WMO_PRES"], errors="coerce")
 # Sidebar Controls
 st.sidebar.header("Start Date")
 
-#years = sorted(df_tracks['ISO_TIME'].dt.year.unique())
 years = sorted(df_tracks['ISO_TIME'].dt.year.unique(), reverse=True)
 months = list(range(1, 13))
 
-default_start_year = 2024
-default_end_year = 2024
+# Set default years but check first if they exist
+default_start_year = 2024 if 2024 in years else max(years)
 
-#years_sorted = sorted(years, reverse=True)
-start_year = st.sidebar.selectbox("Year", years, index=years.index(default_start_year))
+start_year = st.sidebar.selectbox(
+    "Start Year", years, index=years.index(default_start_year), key="start_year_select"
+)
+
+# End year options depend on start year forward
+years_end = [y for y in years if y >= start_year]
+
+default_end_year = 2024 if 2024 in years_end else years_end[0]
+
+
 
 
 #start_year = st.sidebar.selectbox("Start Year", years, index=years.index(default_start_year))
@@ -119,7 +126,10 @@ start_day = st.sidebar.selectbox("Start Day", list(range(1, max_start_day + 1)),
 years_end = [y for y in years if y >= start_year]
 
 st.sidebar.header("End Date")
-end_year = st.sidebar.selectbox("End Year", years_end, index=years_end.index(default_end_year))
+end_year = st.sidebar.selectbox(
+    "End Year", years_end, index=years_end.index(default_end_year), key="end_year_select"
+)
+
 end_month = st.sidebar.selectbox("End Month", months, index=11)  # December
 max_end_day = calendar.monthrange(end_year, end_month)[1]
 end_day = st.sidebar.selectbox("End Day", list(range(1, max_end_day + 1)), index=max_end_day - 1)  # Last day of month
