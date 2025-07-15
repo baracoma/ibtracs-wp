@@ -228,6 +228,8 @@ st.sidebar.markdown("""
 """, unsafe_allow_html=True)
 
 color_scheme = st.sidebar.selectbox("Color scheme", ["Reds", "Viridis", "Magma"])
+line_opacity = st.sidebar.slider("Transparency", min_value=0.0, max_value=1.0, value=1.0, step=0.1)
+
 
 par_polygon = {
     'coordinates': [[
@@ -296,16 +298,29 @@ if not filtered.empty:
     #     pickable=True,
     # )
 
+    #line_layer = pdk.Layer(
+        #"LineLayer",
+        #data=segment_df,
+        #get_source_position="source",
+        #get_target_position="target",
+        #get_color="color",
+        #width_scale=4,
+        #width_min_pixels=4,
+        #pickable=True,
+    #)
+
     line_layer = pdk.Layer(
         "LineLayer",
         data=segment_df,
         get_source_position="source",
         get_target_position="target",
         get_color="color",
-        width_scale=4,
+        get_width=4,
         width_min_pixels=4,
         pickable=True,
+        opacity=line_opacity
     )
+
 
     layers.append(line_layer)
 
