@@ -77,11 +77,28 @@ def interpolate_from_list(color_list, t):
         for i in range(3)
     ]
 
-def wind_to_color(wind):
-    if pd.isna(wind) or wind <= 0:
+# def wind_to_color(wind):
+#     if pd.isna(wind) or wind <= 0:
+#         return [255, 255, 255]
+
+#     scale = min(wind / 150, 1.0)
+
+#     if color_scheme == "Viridis":
+#         return interpolate_from_list(viridis_colors, scale)
+#     elif color_scheme == "Magma":
+#         return interpolate_from_list(magma_colors, scale)
+#     else:
+#         return interpolate_from_list(reds_colors, scale)
+
+
+def value_to_color(value, variable):
+    if pd.isna(value):
         return [255, 255, 255]
 
-    scale = min(wind / 150, 1.0)
+    if variable == "WMO_WIND":
+        scale = min(value / 150, 1.0)  # Higher wind → higher color
+    elif variable == "WMO_PRES":
+        scale = 1.0 - min(max((value - 870) / (1050 - 870), 0.0), 1.0)  # Lower pressure → higher color
 
     if color_scheme == "Viridis":
         return interpolate_from_list(viridis_colors, scale)
@@ -229,6 +246,7 @@ st.sidebar.markdown("""
 
 color_scheme = st.sidebar.selectbox("Color scheme", ["Reds", "Viridis", "Magma"])
 line_opacity = st.sidebar.slider("Transparency", min_value=0.0, max_value=1.0, value=1.0, step=0.1)
+color_by = st.sidebar.selectbox("Variable", ["WMO_WIND", "WMO_PRES"])
 
 
 par_polygon = {
@@ -284,7 +302,8 @@ if not filtered.empty:
     segment_df = pd.DataFrame(segment_rows)
     segment_df["WMO_WIND_DISPLAY"] = segment_df["WMO_WIND"]  # For tooltip display
     segment_df["WMO_WIND_PLOT"] = segment_df["WMO_WIND"].fillna(0)  # For plotting color
-    segment_df["color"] = segment_df["WMO_WIND_PLOT"].apply(wind_to_color)
+    # segment_df["color"] = segment_df["WMO_WIND_PLOT"].apply(wind_to_color)
+    segment_df["color"] = segment_df[color_by].apply(lambda val: value_to_color(val, color_by))
 
 
     # line_layer = pdk.Layer(
@@ -335,13 +354,22 @@ st.pydeck_chart(pdk.Deck(
         zoom=4,
         pitch=0,
     ),
+    # tooltip={
+    #     "html": "<b>SID:</b> {SID}<br/>"
+    #             "<b>Time:</b> {ISO_TIME}<br/>"
+    #             "<b>Wind:</b> {WMO_WIND_DISPLAY} kt<br/>"
+    #             "<b>Pressure:</b> {WMO_PRES} mb",
+    #     "style": {"color": "white"}
+    # }
     tooltip={
-        "html": "<b>SID:</b> {SID}<br/>"
-                "<b>Time:</b> {ISO_TIME}<br/>"
-                "<b>Wind:</b> {WMO_WIND_DISPLAY} kt<br/>"
-                "<b>Pressure:</b> {WMO_PRES} mb",
+        "html": f"<b>SID:</b> {{SID}}<br/>"
+                f"<b>Time:</b> {{ISO_TIME}}<br/>"
+                f"<b>Wind:</b> {{WMO_WIND}} kt<br/>"
+                f"<b>Pressure:</b> {{WMO_PRES}} mb<br/>"
+                f"<b>Variable:</b> {color_by}",
         "style": {"color": "white"}
     }
+
 ), use_container_width=True,
    height=canvas_height,)
 
